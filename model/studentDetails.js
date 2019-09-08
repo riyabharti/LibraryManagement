@@ -5,9 +5,11 @@ var studentSchema=new Schema(
         'regid':
         {
             type:String,
-            required:true
+            required:true,
+            unique: true,
+            index: true
         },
-        'Collegeid':
+        'name':
         {
             type:String,
             required:true
