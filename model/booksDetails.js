@@ -12,6 +12,13 @@ var BookSchema=new Schema(
             type: String,
             required:true
         },
+        'isbn':
+        {
+            type:Number,
+            required:true,
+            unique:true,
+            index:true
+        },
         'total':
         {
             type:Number,
