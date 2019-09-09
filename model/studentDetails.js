@@ -9,7 +9,19 @@ var studentSchema=new Schema(
             unique: true,
             index: true
         },
+        'libid':
+        {
+            type:String,
+            required:true,
+            unique:true,
+            index:true
+        },
         'name':
+        {
+            type:String,
+            required:true
+        },
+        'branch':
         {
             type:String,
             required:true
