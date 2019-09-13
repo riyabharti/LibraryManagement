@@ -28,6 +28,11 @@ var BookSchema=new Schema(
         {
             type:Number,
             default:0
+        },
+        'branch':
+        {
+            type:Array,
+            default: []
         }
     }
 )

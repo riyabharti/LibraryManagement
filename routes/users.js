@@ -46,16 +46,14 @@ router.post('/reg',function(req,res){
 
     data.save().then(item=>
       {
-        console.log(item);
         res.status(200).json({
           'success': true,
           'data': item
         });
       }).catch(err=>{
-        console.log(error);
         res.status(200).json({
           'success' : false,
-          'data' : err
+          'data' : "Registration id already exists"
         })
       })
   }).catch(err=>{
@@ -108,6 +106,50 @@ router.post('/login',function(req,res){
   })
 })
 
+//Change Password
+router.post('/changePass',verifyToken,function(req,res){
+  Student.findById(decodedToken._id).then(user=>{
+    if(user==null){
+      res.status(200).json({
+        'success': false,
+        'msg': "Wrong User Details"
+      });
+    }
+    else
+    {
+      if(user.password===md5(req.body.currentpassword))
+      {
+        user.password=md5(req.body.newpassword);
+        user.save().then(data=>{
+          res.status(200).json({
+            'success':true,
+            'data':data
+          })
+        }).catch(err=>{
+          res.status(200).json({
+            'success':false,
+            'data':err,
+            'msg':"Error occured while saving new password!!"
+          })
+        })
+      }
+      else
+      {
+        res.status(200).json({
+          'success': false,
+          'msg': "Entered Password is incorrect"
+        });
+      }
+    }
+  }).catch(err=>{
+    res.status(200).json({
+      'success':false,
+      'data':err,
+      'msg':"Error occured while searching user!!"
+    })
+  })
+})
+
 //Add Book Data
 router.post('/addBook',verifyToken,function(req,res){
   Book.findOne({'isbn':req.body.isbn}).then(bookItem=>{
@@ -116,7 +158,8 @@ router.post('/addBook',verifyToken,function(req,res){
         'name':req.body.name,
         'author':req.body.author,
         'isbn':req.body.isbn,
-        'total':req.body.total
+        'total':req.body.total,
+        'branch':req.body.branch
       }
       var data=new Book(book);
       data.save().then(item=>{
@@ -348,11 +391,12 @@ router.post('/returnBook',verifyToken,function(req,res){
 
 //Get Book
 router.get('/getBook',verifyToken,function(req,res){
-  Book.find().then(item=>{
+  Book.find({'branch':decodedToken.branch}).then(item=>{
     res.status(200).json({
       'success' : true,
       'data' : item,
-      'libId': decodedToken.libid
+      'libId': decodedToken.libid,
+      'name':decodedToken.name
     })
   }).catch(err=>{
     res.status(200).json({
