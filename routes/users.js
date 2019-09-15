@@ -5,6 +5,7 @@ var decodedToken;
 
 const Student=require('../model/studentDetails');
 const Book=require('../model/booksDetails')
+const StuBook=require('../model/studentbook')
 var express = require('express');
 var router = express.Router();
  
@@ -273,130 +274,15 @@ router.post('/decreaseIssued',verifyToken,function(req,res){
   })
 })
 
-//Update Book in Student
-router.post('/updateBook',verifyToken,function(req,res){
-  Student.findById(decodedToken._id).then(user=>{
-    if(user==null){
-      res.status(200).json({
-        'success': false,
-        'msg': "Wrong User Details"
-      });
-    }
-    else{
-      if(user.book.length>=5)
-      {
-        res.status(200).json({
-          'success': false,
-          'msg': "Issued book reached the limit!!"
-        });
-      }
-      else if(user.book.includes(req.body.name)){
-        res.status(200).json({
-          'success': false,
-          'msg': "You cannot issue 2 same books!!"
-        });
-      }
-      else
-      {
-        user.book.push(req.body.name);
-        user.save().then(item=>{
-          res.status(200).json({
-            'success':true,
-            'msg' : item
-          })
-        }).catch(err=>{
-          res.status(200).json({
-            'success': false,
-            'msg': err+"2nd"
-          });
-        })
-      }
-    }
-  }).catch(err=>{
-    console.log(err);
-    res.status(200).json({
-      'success': false,
-      'msg': err+"3rd"
-    });
-  })
-})
-
-//Details
-router.get('/detail',verifyToken,function(req,res){
-  Student.findOne({'libid':decodedToken.libid}).then(item=>{
-    if(item==null)
-    {
-      res.status(200).json({
-        'success': false,
-        'msg': "Wrong User Details"
-      });
-    }
-    else{
-      res.status(200).json({
-        'success': true,
-        'data': item
-      });
-    }
-  }).catch(err=>{
-    console.log(err);
-    res.status(200).json({
-      'success': false,
-      'msg': err+"Error in finding!"
-    });
-  })
-})
-
-//Return and Update for student
-router.post('/returnBook',verifyToken,function(req,res){
-  Student.findOne({'libid':decodedToken.libid}).then(item=>{
-    if(item==null)
-    {
-      res.status(200).json({
-        'success': false,
-        'msg': "Wrong User Details"
-      });
-    }
-    else
-    {
-      var bn=item.book.indexOf(req.body.name)
-      console.log(req.body.name)
-      if(bn>-1){
-        item.book.splice(bn,1);
-        item.save().then(item=>{
-          res.status(200).json({
-            'success':true,
-            'msg' : item
-          })
-        }).catch(err=>{
-          res.status(200).json({
-            'success': false,
-            'msg': err+"Error after removing returned book!!"
-          });
-        })
-      }
-      else{
-        res.status(200).json({
-          'success': false,
-          'msg': "Wrong Book Details"
-        });
-      }
-    }
-  }).catch(err=>{
-    res.status(200).json({
-      'success': false,
-      'msg': err+"Error while finding student!!"
-    });
-  })
-})
 
 //Get Book
 router.get('/getBook',verifyToken,function(req,res){
-  Book.find({'branch':decodedToken.branch}).then(item=>{
+  Book.find({'branch':decodedToken.branch}).sort({isbn:1}).then(item=>{
     res.status(200).json({
       'success' : true,
       'data' : item,
-      'libId': decodedToken.libid,
-      'name':decodedToken.name
+      'libid': decodedToken.libid,
+      'name':decodedToken.name,
     })
   }).catch(err=>{
     res.status(200).json({
@@ -407,4 +293,188 @@ router.get('/getBook',verifyToken,function(req,res){
   })
 })
 
+//issue change in Common table
+router.post('/stubookIssue',verifyToken,function(req,res){
+  var date=Date.now();
+  var sbCommon={
+    'isbn':req.body.isbn,
+    'libid':decodedToken.libid,
+    'issueDate':date 
+  }
+  // console.log(sbCommon);
+  var data = new StuBook(sbCommon);
+  data.save().then(item=>{
+    res.status(200).json({
+      'success': true,
+      'data': item
+    });
+  }).catch(err=>{
+    res.status(200).json({
+      'success': false,
+      'data': err,
+      'msg':"Error in Api"
+    });
+  })
+  
+})
+
+//Return in Common table
+router.post('/stubookReturn',verifyToken,function(req,res){
+  StuBook.findOneAndDelete({'isbn':req.body.isbn,'libid':decodedToken.libid}).then(item=>{
+    if(item==null)
+    {
+      res.status(200).json({
+        'success': false,
+        'data': 'Wrong Details!!'
+      });
+    }
+    else
+    {
+      res.status(200).json({
+        'success': true,
+        'data': item
+      });
+    }
+  }).catch(err=>{
+    res.status(200).json({
+      'success': false,
+      'data': err,
+      'msg':"Error in API Return"
+    });
+  })
+})
+
+//Find no of issued books of user
+router.get('/stubookFind',verifyToken,function(req,res){
+  StuBook.find({'libid':decodedToken.libid}).sort({isbn:1}).then(item=>{
+    res.status(200).json({
+      'success': true,
+      'data': item
+    });
+  }).catch(err=>{
+    res.status(200).json({
+      'success': false,
+      'data': err,
+      'msg':"Error in DB call"
+    });
+  })
+}) 
+
 module.exports = router;
+
+
+//Update Book in Student
+// router.post('/updateBook',verifyToken,function(req,res){
+//   Student.findById(decodedToken._id).then(user=>{
+//     if(user==null){
+//       res.status(200).json({
+//         'success': false,
+//         'msg': "Wrong User Details"
+//       });
+//     }
+//     else{
+//       if(user.book.length>=5)
+//       {
+//         res.status(200).json({
+//           'success': false,
+//           'msg': "Issued book reached the limit!!"
+//         });
+//       }
+//       else if(user.book.includes(req.body.name)){
+//         res.status(200).json({
+//           'success': false,
+//           'msg': "You cannot issue 2 same books!!"
+//         });
+//       }
+//       else
+//       {
+//         user.book.push(req.body.name);
+//         user.save().then(item=>{
+//           res.status(200).json({
+//             'success':true,
+//             'msg' : item
+//           })
+//         }).catch(err=>{
+//           res.status(200).json({
+//             'success': false,
+//             'msg': err+"2nd"
+//           });
+//         })
+//       }
+//     }
+//   }).catch(err=>{
+//     console.log(err);
+//     res.status(200).json({
+//       'success': false,
+//       'msg': err+"3rd"
+//     });
+//   })
+// })
+
+//Details of a student NOT REQUIRED
+// router.get('/detail',verifyToken,function(req,res){
+//   Student.findOne({'libid':decodedToken.libid}).then(item=>{
+//     if(item==null)
+//     {
+//       res.status(200).json({
+//         'success': false,
+//         'msg': "Wrong User Details"
+//       });
+//     }
+//     else{
+//       res.status(200).json({
+//         'success': true,
+//         'data': item
+//       });
+//     }
+//   }).catch(err=>{
+//     console.log(err);
+//     res.status(200).json({
+//       'success': false,
+//       'msg': err+"Error in finding!"
+//     });
+//   })
+// })
+
+//Return and Update for student
+// router.post('/returnBook',verifyToken,function(req,res){
+//   Student.findOne({'libid':decodedToken.libid}).then(item=>{
+//     if(item==null)
+//     {
+//       res.status(200).json({
+//         'success': false,
+//         'msg': "Wrong User Details"
+//       });
+//     }
+//     else
+//     {
+//       var bn=item.book.indexOf(req.body.name)
+//       console.log(req.body.name)
+//       if(bn>-1){
+//         item.book.splice(bn,1);
+//         item.save().then(item=>{
+//           res.status(200).json({
+//             'success':true,
+//             'msg' : item
+//           })
+//         }).catch(err=>{
+//           res.status(200).json({
+//             'success': false,
+//             'msg': err+"Error after removing returned book!!"
+//           });
+//         })
+//       }
+//       else{
+//         res.status(200).json({
+//           'success': false,
+//           'msg': "Wrong Book Details"
+//         });
+//       }
+//     }
+//   }).catch(err=>{
+//     res.status(200).json({
+//       'success': false,
+//       'msg': err+"Error while finding student!!"
+//     });
+//   })
+// })

@@ -6,21 +6,17 @@ var studBook=new Schema(
         {
             type:Number,
             required:true,
-            unique:true,
-            index:true
         },
         'libid':
         {
             type:String,
             required:true,
-            unique:true,
-            index:true
         },
-        'branch':
+        'issueDate':
         {
-            type:String,
+            type:Date,
             required:true
-        },
+        }
     }
 )
 module.exports=mongoose.model('StuBook',studBook)

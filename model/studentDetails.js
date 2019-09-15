@@ -30,11 +30,6 @@ var studentSchema=new Schema(
         {
             type:String,
             required:true
-        },
-        'book':
-        {
-            type:Array,
-            default: []
         }
     }
 )
