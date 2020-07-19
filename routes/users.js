@@ -1,13 +1,37 @@
 const jwt=require('jsonwebtoken');
 const md5=require('md5');
-const secret='ANY_SECRET_KEY';
+const multer=require('multer');
+const path = require('path');
 var decodedToken;
 
 const Student=require('../model/studentDetails');
 const Book=require('../model/booksDetails')
 const StuBook=require('../model/studentbook')
 var express = require('express');
+var fs = require('fs');
+
 var router = express.Router();
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      cb(null, './profile_photos');
+  },
+  filename: (req, file, cb) => {
+      newFile=file.originalname.split('.');
+      cb(null, Date.now() + '.' + newFile[newFile.length-1]);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype == 'image/jpeg' || file.mimetype == 'image/jpg' || file.mimetype == 'image/png')
+      cb(null, false);
+  else
+      cb(null, true)
+}
+
+// var upload = multer({ dest: 'uploads/' },fileFilter);
+
+const upload = multer({ storage, limits: { fileSize: 1024 * 1024 } }, fileFilter).single('photo');
  
 
 /* GET users listing. */
@@ -19,7 +43,7 @@ router.get('/', function(req, res, next) {
 function verifyToken(req,res,next){
   try {
     var token = (req.headers['authorization']).split(" ")[1];
-    var data = jwt.verify(token,secret,{expiresIn: "1800000"});
+    var data = jwt.verify(token,process.env.secretKey,{expiresIn: "1800000"});
     decodedToken=jwt.decode(token);
   	next();
   } catch(err) {
@@ -44,7 +68,6 @@ router.post('/reg',function(req,res){
       'branch':req.body.branch
     }
     var data = new Student(user);
-
     data.save().then(item=>
       {
         res.status(200).json({
@@ -65,8 +88,6 @@ router.post('/reg',function(req,res){
     })
   })
   
-  
-  
 })
 
 //Login
@@ -82,7 +103,7 @@ router.post('/login',function(req,res){
       if (item.password===md5(req.body.password)) {
         var newItem=JSON.stringify(item)
         console.log(newItem);
-        var token = jwt.sign(item.toJSON(),secret,{expiresIn: "1800000"});
+        var token = jwt.sign(item.toJSON(),process.env.secretKey,{expiresIn: "1800000"});
         console.log(token);
         console.log(req.header);
         console.log(req.headers);
@@ -359,6 +380,51 @@ router.get('/stubookFind',verifyToken,function(req,res){
     });
   })
 }) 
+
+//Upload profile picture
+router.post('/uploadProfile',verifyToken,function(req,res){
+  upload(req, res, err => {  
+    if (err)
+      {
+        console.log(err)
+        res.status(501).json({ 
+          'success': false,
+          'msg': err 
+        });
+      }
+    else
+    {
+      Student.findById(decodedToken._id).then(item=>{
+        if(item.profilePath!='')
+        {
+          fs.unlinkSync(path.join(__dirname,'..','profile_photos',item.profilePath));
+          // console.log("Unlinking!!")
+        }
+        item.profilePath=req.file.filename;
+        console.log(item.profilePath);
+        item.save().then(data=>{
+          console.log("Updated Profile successfully!");
+          res.status(200).json({
+            'success':true,
+            'msg':"Updated profile successfully!",
+            'data':data
+          })
+        }).catch(err=>{
+          res.status(200).json({
+            'success':false,
+            'msg':"Updated profile error",
+            'data':err
+          })
+        })
+      })
+      // fs.unlinkSync(path.join(__dirname,'..','profile_photos',item.photoUrl));
+      //path.resolve
+      
+    }
+  })
+});
+
+
 
 module.exports = router;
 

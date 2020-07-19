@@ -30,6 +30,11 @@ var studentSchema=new Schema(
         {
             type:String,
             required:true
+        },
+        'profilePath':
+        {
+            type:String,
+            default:""
         }
     }
 )

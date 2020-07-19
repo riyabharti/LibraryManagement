@@ -5,8 +5,20 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const cors=require('cors')
 const mongoose=require('mongoose')
-const uri = 'mongodb+srv://newDB:passDB@cluster0-fpypq.mongodb.net/test?retryWrites=true&w=majority';
-mongoose.connect(uri, {useNewUrlParser: true});
+require('dotenv').config();
+
+mongoose.connect(process.env.dbUrl, {
+  useNewUrlParser: true,
+  useCreateIndex: true, 
+  // useUnifiedTopology: true, 
+  useFindAndModify: false
+}).then(data => {
+  console.log("Connected to the DB");
+}).catch(err => {
+  console.log("Error connecting to the DB",err);
+});
+mongoose.Promise = global.Promise;
+
 mongoose.connection.on('open',()=>{
 	console.log("connection established.. ")
 })

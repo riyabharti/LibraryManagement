@@ -1,2 +1,5 @@
 /node_modules
 /library
+/profile_photos
+*.zip
+.env
